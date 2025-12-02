@@ -1,0 +1,51 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: relay-server
+
+  # Multipart file upload settings
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+# AI 서버 URL 설정
+ai-servers:
+  analysis:
+    url: ${AI_ANALYSIS_URL:http://localhost:8000}
+    timeout: 600000  # 10분 (스토리 생성 시간 고려)
+  image-generation:
+    url: ${AI_IMAGE_GENERATION_URL:http://localhost:8001}
+    timeout: 30000   # 30초 (이미지 생성 시간)
+  rag:
+    url: ${AI_RAG_URL:http://localhost:8002}
+    timeout: 10000   # 10초 (챗봇 응답 시간)
+
+# AWS S3 설정
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_S3_REGION:ap-northeast-2}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.story.relay: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Management (Actuator)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
