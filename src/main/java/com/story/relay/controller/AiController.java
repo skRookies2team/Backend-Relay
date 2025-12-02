@@ -5,6 +5,8 @@ import com.story.relay.dto.ChatMessageRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
 import com.story.relay.dto.ImageGenerationRequestDto;
 import com.story.relay.dto.ImageGenerationResponseDto;
+import com.story.relay.dto.SubtreeRegenerationRequestDto;
+import com.story.relay.dto.SubtreeRegenerationResponseDto;
 import com.story.relay.service.AnalysisAiClient;
 import com.story.relay.service.ImageGenerationAiClient;
 import com.story.relay.service.RagAiClient;
@@ -68,6 +70,22 @@ public class AiController {
 
         ImageGenerationResponseDto response = imageGenerationAiClient.generateImage(request);
         log.info("Image generation completed: {}", response.getImageUrl());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Regenerate subtree from a modified node
+     */
+    @PostMapping("/regenerate-subtree")
+    public ResponseEntity<SubtreeRegenerationResponseDto> regenerateSubtree(
+            @RequestBody SubtreeRegenerationRequestDto request) {
+        log.info("=== Regenerate Subtree Request ===");
+        log.info("Episode: {} (order {})", request.getEpisodeTitle(), request.getEpisodeOrder());
+        log.info("Parent node: {}, depth: {}/{}", request.getParentNode().getNodeId(),
+            request.getCurrentDepth(), request.getMaxDepth());
+
+        SubtreeRegenerationResponseDto response = analysisAiClient.regenerateSubtree(request);
+        log.info("Subtree regeneration completed: {} nodes", response.getTotalNodesRegenerated());
         return ResponseEntity.ok(response);
     }
 

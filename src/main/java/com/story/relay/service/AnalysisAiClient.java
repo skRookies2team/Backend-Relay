@@ -1,5 +1,7 @@
 package com.story.relay.service;
 
+import com.story.relay.dto.SubtreeRegenerationRequestDto;
+import com.story.relay.dto.SubtreeRegenerationResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -64,6 +66,34 @@ public class AnalysisAiClient {
         }
 
         log.info("Story generation completed successfully");
+        return response;
+    }
+
+    /**
+     * Regenerate subtree from a modified node
+     */
+    public SubtreeRegenerationResponseDto regenerateSubtree(SubtreeRegenerationRequestDto request) {
+        log.info("Calling analysis AI server for subtree regeneration");
+        log.info("Parent node: {}, current depth: {}, max depth: {}",
+            request.getParentNode().getNodeId(), request.getCurrentDepth(), request.getMaxDepth());
+
+        SubtreeRegenerationResponseDto response = analysisAiWebClient.post()
+            .uri("/regenerate-subtree")
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(SubtreeRegenerationResponseDto.class)
+            .timeout(Duration.ofMinutes(5))
+            .onErrorResume(e -> {
+                log.error("AI server error during subtree regeneration: {}", e.getMessage(), e);
+                throw new RuntimeException("Subtree regeneration failed: " + e.getMessage());
+            })
+            .block();
+
+        if (response == null) {
+            throw new RuntimeException("No response from analysis AI server");
+        }
+
+        log.info("Subtree regeneration completed: {} nodes regenerated", response.getTotalNodesRegenerated());
         return response;
     }
 
