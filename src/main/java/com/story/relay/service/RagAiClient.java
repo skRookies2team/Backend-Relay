@@ -33,78 +33,64 @@ public class RagAiClient {
 
     /**
      * Index a character for RAG-based chat
+     * Returns a reactive Mono for non-blocking execution
      */
-    public boolean indexCharacter(CharacterIndexRequestDto request) {
-        try {
-            log.info("Indexing character: {} ({})", request.getName(), request.getCharacterId());
+    public Mono<Boolean> indexCharacter(CharacterIndexRequestDto request) {
+        log.info("Indexing character: {} ({})", request.getName(), request.getCharacterId());
 
-            Boolean success = ragServerWebClient.post()
+        return ragServerWebClient.post()
                 .uri("/chat/index-character")
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(Boolean.class)
                 .timeout(Duration.ofMillis(timeout))
-                .block();
-
-            log.info("Character indexed successfully: {}", request.getCharacterId());
-            return success != null && success;
-
-        } catch (Exception e) {
-            log.error("Failed to index character {}: {}", request.getCharacterId(), e.getMessage());
-            return false;
-        }
+                .map(success -> success != null && success)
+                .doOnSuccess(success -> {
+                    if (success) {
+                        log.info("Character indexed successfully: {}", request.getCharacterId());
+                    }
+                })
+                .doOnError(e -> log.error("Failed to index character {}: {}",
+                        request.getCharacterId(), e.getMessage()))
+                .onErrorReturn(false);
     }
 
     /**
      * Send a message to character chatbot
+     * Returns a reactive Mono for non-blocking execution
      */
-    public ChatMessageResponseDto sendMessage(ChatMessageRequestDto request) {
+    public Mono<ChatMessageResponseDto> sendMessage(ChatMessageRequestDto request) {
         log.info("Sending message to character: {}", request.getCharacterId());
         log.info("User message: {}", request.getUserMessage());
 
-        try {
-            ChatMessageResponseDto response = ragServerWebClient.post()
+        return ragServerWebClient.post()
                 .uri("/chat/message")
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(ChatMessageResponseDto.class)
                 .timeout(Duration.ofMillis(timeout))
+                .doOnSuccess(response -> log.info("Received AI response: {}", response.getAiMessage()))
+                .doOnError(e -> log.error("RAG server error: {}", e.getMessage()))
                 .onErrorResume(e -> {
-                    log.error("RAG server error: {}", e.getMessage());
+                    log.error("Failed to get chat response, using fallback: {}", e.getMessage());
                     return Mono.just(generateFallbackResponse(request));
                 })
-                .block();
-
-            if (response == null) {
-                return generateFallbackResponse(request);
-            }
-
-            log.info("Received AI response: {}", response.getAiMessage());
-            return response;
-
-        } catch (Exception e) {
-            log.error("Failed to get chat response: {}", e.getMessage());
-            return generateFallbackResponse(request);
-        }
+                .switchIfEmpty(Mono.just(generateFallbackResponse(request)));
     }
 
     /**
      * Check RAG server health
+     * Returns a reactive Mono for non-blocking execution
      */
-    public boolean checkHealth() {
-        try {
-            String response = ragServerWebClient.get()
+    public Mono<Boolean> checkHealth() {
+        return ragServerWebClient.get()
                 .uri("/chat/health")
                 .retrieve()
                 .bodyToMono(String.class)
                 .timeout(Duration.ofSeconds(5))
-                .block();
-
-            return response != null;
-        } catch (Exception e) {
-            log.warn("RAG server health check failed: {}", e.getMessage());
-            return false;
-        }
+                .map(response -> response != null)
+                .doOnError(e -> log.warn("RAG server health check failed: {}", e.getMessage()))
+                .onErrorReturn(false);
     }
 
     /**

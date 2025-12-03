@@ -10,10 +10,12 @@ import com.story.relay.dto.SubtreeRegenerationResponseDto;
 import com.story.relay.service.AnalysisAiClient;
 import com.story.relay.service.ImageGenerationAiClient;
 import com.story.relay.service.RagAiClient;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +24,6 @@ import java.util.Map;
 @RequestMapping("/ai")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class AiController {
 
     private final AnalysisAiClient analysisAiClient;
@@ -31,125 +32,140 @@ public class AiController {
 
     /**
      * Analyze novel text to extract summary, characters, and gauges
+     * Returns a reactive Mono for non-blocking execution
      */
     @PostMapping("/analyze")
-    public ResponseEntity<Map<String, Object>> analyzeNovel(@RequestBody Map<String, Object> request) {
+    public Mono<ResponseEntity<Map<String, Object>>> analyzeNovel(@RequestBody Map<String, Object> request) {
         log.info("=== Analyze Novel Request ===");
         Object novelText = request.get("novelText");
         if (novelText != null) {
             log.info("Novel text length: {} characters", novelText.toString().length());
         }
 
-        Map<String, Object> response = analysisAiClient.analyze(request);
-        log.info("Analysis completed successfully");
-        return ResponseEntity.ok(response);
+        return analysisAiClient.analyze(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Analysis completed successfully"));
     }
 
     /**
      * Generate full story via AI server
+     * Returns a reactive Mono for non-blocking execution
      */
     @PostMapping("/generate")
-    public ResponseEntity<Map<String, Object>> generateStory(@RequestBody Map<String, Object> request) {
+    public Mono<ResponseEntity<Map<String, Object>>> generateStory(@RequestBody Map<String, Object> request) {
         log.info("=== Generate Story Request ===");
         log.info("Request: {}", request.keySet());
 
-        Map<String, Object> response = analysisAiClient.generate(request);
-        log.info("Story generation completed successfully");
-        return ResponseEntity.ok(response);
+        return analysisAiClient.generate(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Story generation completed successfully"));
     }
 
     /**
      * Generate image for a story node
+     * Returns a reactive Mono for non-blocking execution
      */
     @PostMapping("/generate-image")
-    public ResponseEntity<ImageGenerationResponseDto> generateImage(
-            @RequestBody ImageGenerationRequestDto request) {
+    public Mono<ResponseEntity<ImageGenerationResponseDto>> generateImage(
+            @Valid @RequestBody ImageGenerationRequestDto request) {
         log.info("=== Generate Image Request ===");
         log.info("Node text: {}", request.getNodeText());
         log.info("Episode: {}", request.getEpisodeTitle());
 
-        ImageGenerationResponseDto response = imageGenerationAiClient.generateImage(request);
-        log.info("Image generation completed: {}", response.getImageUrl());
-        return ResponseEntity.ok(response);
+        return imageGenerationAiClient.generateImage(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Image generation completed: {}",
+                        response.getBody().getImageUrl()));
     }
 
     /**
      * Regenerate subtree from a modified node
+     * Returns a reactive Mono for non-blocking execution
      */
     @PostMapping("/regenerate-subtree")
-    public ResponseEntity<SubtreeRegenerationResponseDto> regenerateSubtree(
-            @RequestBody SubtreeRegenerationRequestDto request) {
+    public Mono<ResponseEntity<SubtreeRegenerationResponseDto>> regenerateSubtree(
+            @Valid @RequestBody SubtreeRegenerationRequestDto request) {
         log.info("=== Regenerate Subtree Request ===");
         log.info("Episode: {} (order {})", request.getEpisodeTitle(), request.getEpisodeOrder());
         log.info("Parent node: {}, depth: {}/{}", request.getParentNode().getNodeId(),
             request.getCurrentDepth(), request.getMaxDepth());
 
-        SubtreeRegenerationResponseDto response = analysisAiClient.regenerateSubtree(request);
-        log.info("Subtree regeneration completed: {} nodes", response.getTotalNodesRegenerated());
-        return ResponseEntity.ok(response);
+        return analysisAiClient.regenerateSubtree(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Subtree regeneration completed: {} nodes",
+                        response.getBody().getTotalNodesRegenerated()));
     }
 
     /**
      * Index a character for RAG-based chat
+     * Returns a reactive Mono for non-blocking execution
      */
     @PostMapping("/chat/index-character")
-    public ResponseEntity<Boolean> indexCharacter(@RequestBody CharacterIndexRequestDto request) {
+    public Mono<ResponseEntity<Boolean>> indexCharacter(@Valid @RequestBody CharacterIndexRequestDto request) {
         log.info("=== Index Character Request ===");
         log.info("Character: {} ({})", request.getName(), request.getCharacterId());
 
-        boolean success = ragAiClient.indexCharacter(request);
-        log.info("Character indexing {}", success ? "successful" : "failed");
-        return ResponseEntity.ok(success);
+        return ragAiClient.indexCharacter(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Character indexing {}",
+                        response.getBody() ? "successful" : "failed"));
     }
 
     /**
      * Send a message to character chatbot
+     * Returns a reactive Mono for non-blocking execution
      */
     @PostMapping("/chat/message")
-    public ResponseEntity<ChatMessageResponseDto> sendChatMessage(
-            @RequestBody ChatMessageRequestDto request) {
+    public Mono<ResponseEntity<ChatMessageResponseDto>> sendChatMessage(
+            @Valid @RequestBody ChatMessageRequestDto request) {
         log.info("=== Chat Message Request ===");
         log.info("Character: {}", request.getCharacterId());
         log.info("User message: {}", request.getUserMessage());
 
-        ChatMessageResponseDto response = ragAiClient.sendMessage(request);
-        log.info("Chat response: {}", response.getAiMessage());
-        return ResponseEntity.ok(response);
+        return ragAiClient.sendMessage(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Chat response: {}",
+                        response.getBody().getAiMessage()));
     }
 
     /**
      * Health check for relay server and AI servers
+     * Returns a reactive Mono for non-blocking execution
      */
     @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
+    public Mono<ResponseEntity<Map<String, Object>>> health() {
         log.debug("Health check request");
 
-        Map<String, Object> health = new HashMap<>();
-        health.put("status", "healthy");
-        health.put("relayServer", "up");
+        return Mono.zip(
+                analysisAiClient.checkHealth(),
+                imageGenerationAiClient.checkHealth(),
+                ragAiClient.checkHealth()
+        ).map(tuple -> {
+            boolean analysisHealthy = tuple.getT1();
+            boolean imageHealthy = tuple.getT2();
+            boolean ragHealthy = tuple.getT3();
 
-        Map<String, Object> aiServers = new HashMap<>();
+            Map<String, Object> health = new HashMap<>();
+            health.put("status", "healthy");
+            health.put("relayServer", "up");
 
-        // Check analysis AI
-        Map<String, Object> analysisAiHealth = new HashMap<>();
-        boolean analysisHealthy = analysisAiClient.checkHealth();
-        analysisAiHealth.put("status", analysisHealthy ? "up" : "down");
-        aiServers.put("analysisAi", analysisAiHealth);
+            Map<String, Object> aiServers = new HashMap<>();
 
-        // Check image generation AI
-        Map<String, Object> imageAiHealth = new HashMap<>();
-        boolean imageHealthy = imageGenerationAiClient.checkHealth();
-        imageAiHealth.put("status", imageHealthy ? "up" : "down");
-        aiServers.put("imageGenerationAi", imageAiHealth);
+            Map<String, Object> analysisAiHealth = new HashMap<>();
+            analysisAiHealth.put("status", analysisHealthy ? "up" : "down");
+            aiServers.put("analysisAi", analysisAiHealth);
 
-        // Check RAG server
-        Map<String, Object> ragAiHealth = new HashMap<>();
-        boolean ragHealthy = ragAiClient.checkHealth();
-        ragAiHealth.put("status", ragHealthy ? "up" : "down");
-        aiServers.put("ragAi", ragAiHealth);
+            Map<String, Object> imageAiHealth = new HashMap<>();
+            imageAiHealth.put("status", imageHealthy ? "up" : "down");
+            aiServers.put("imageGenerationAi", imageAiHealth);
 
-        health.put("aiServers", aiServers);
+            Map<String, Object> ragAiHealth = new HashMap<>();
+            ragAiHealth.put("status", ragHealthy ? "up" : "down");
+            aiServers.put("ragAi", ragAiHealth);
 
-        return ResponseEntity.ok(health);
+            health.put("aiServers", aiServers);
+
+            return ResponseEntity.ok(health);
+        });
     }
 }

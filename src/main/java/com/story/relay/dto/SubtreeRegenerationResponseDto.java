@@ -1,5 +1,6 @@
 package com.story.relay.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -20,12 +21,17 @@ public class SubtreeRegenerationResponseDto {
     @Getter
     @Builder
     public static class RegeneratedNode {
+        @JsonProperty("id")  // Python returns "id", map to nodeId
         private String nodeId;
+
         private String text;
         private List<String> choices;
         private Integer depth;
-        private String parentId;
+        private String parentId;  // Optional, may be null
         private NodeDetails details;
+
+        @JsonProperty("children")  // Ignore children array from Python
+        private List<Map<String, Object>> children;  // Accept but don't use
 
         @Getter
         @Builder
