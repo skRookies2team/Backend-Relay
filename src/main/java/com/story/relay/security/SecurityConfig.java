@@ -4,59 +4,55 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 
-/**
- * Security Configuration for relay-server
- * Configures JWT authentication and CORS
- */
 @Configuration
-@EnableWebSecurity
+@EnableWebFluxSecurity
 @RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationWebFilter jwtAuthenticationWebFilter;
     private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("Configuring SecurityFilterChain for relay-server");
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        log.info("Configuring SecurityWebFilterChain for relay-server (Reactive)");
 
         http
                 // CORS configuration
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .cors(corsSpec -> corsSpec.configurationSource(corsConfigurationSource))
 
-                // CSRF disabled (stateless API with JWT)
-                .csrf(AbstractHttpConfigurer::disable)
-
-                // Session management: stateless (JWT-based)
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                // CSRF disabled
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
 
                 // Authorization rules
-                .authorizeHttpRequests(auth -> auth
+                .authorizeExchange(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/ai/health").permitAll()  // Health check - no auth required
+                        .pathMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**",
+                                "/swagger-resources/**"
+                        ).permitAll()
+                        .pathMatchers("/ai/health").permitAll()  // Health check
 
                         // All other AI endpoints require authentication
-                        .requestMatchers("/ai/**").authenticated()
+                        .pathMatchers("/ai/**").authenticated()
 
                         // Deny all other requests
-                        .anyRequest().denyAll()
+                        .anyExchange().denyAll()
                 )
 
-                // Add JWT filter before UsernamePasswordAuthenticationFilter
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // Add JWT filter at the authentication stage
+                .addFilterAt(jwtAuthenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
 
-        log.info("SecurityFilterChain configured successfully");
+        log.info("SecurityWebFilterChain configured successfully");
         return http.build();
     }
 }

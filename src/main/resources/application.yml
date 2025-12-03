@@ -2,14 +2,13 @@ server:
   port: 8081
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: relay-server
 
   # Multipart file upload settings
-  servlet:
-    multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
+
 
 # AI 서버 URL 설정
 ai-servers:
