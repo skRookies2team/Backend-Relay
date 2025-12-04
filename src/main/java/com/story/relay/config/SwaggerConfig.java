@@ -14,9 +14,9 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
         Info info = new Info()
-                .title("Relay Server API")
+                .title("릴레이 소설 서버 API")
                 .version("v1.0.0")
-                .description("API for Relay Server");
+                .description("릴레이 소설을 위한 API 문서입니다.");
 
         // Security Scheme for JWT
         String jwtSchemeName = "bearer-key";

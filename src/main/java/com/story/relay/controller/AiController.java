@@ -10,6 +10,7 @@ import com.story.relay.dto.SubtreeRegenerationResponseDto;
 import com.story.relay.service.AnalysisAiClient;
 import com.story.relay.service.ImageGenerationAiClient;
 import com.story.relay.service.RagAiClient;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class AiController {
      * Analyze novel text to extract summary, characters, and gauges
      * Returns a reactive Mono for non-blocking execution
      */
+    @Operation(summary = "소설 분석")
     @PostMapping("/analyze")
     public Mono<ResponseEntity<Map<String, Object>>> analyzeNovel(@RequestBody Map<String, Object> request) {
         log.info("=== Analyze Novel Request ===");
@@ -51,6 +53,7 @@ public class AiController {
      * Generate full story via AI server
      * Returns a reactive Mono for non-blocking execution
      */
+    @Operation(summary = "소설 생성")
     @PostMapping("/generate")
     public Mono<ResponseEntity<Map<String, Object>>> generateStory(@RequestBody Map<String, Object> request) {
         log.info("=== Generate Story Request ===");
@@ -65,6 +68,7 @@ public class AiController {
      * Generate image for a story node
      * Returns a reactive Mono for non-blocking execution
      */
+    @Operation(summary = "이미지 생성")
     @PostMapping("/generate-image")
     public Mono<ResponseEntity<ImageGenerationResponseDto>> generateImage(
             @Valid @RequestBody ImageGenerationRequestDto request) {
@@ -82,6 +86,7 @@ public class AiController {
      * Regenerate subtree from a modified node
      * Returns a reactive Mono for non-blocking execution
      */
+    @Operation(summary = "서브트리 재생성")
     @PostMapping("/regenerate-subtree")
     public Mono<ResponseEntity<SubtreeRegenerationResponseDto>> regenerateSubtree(
             @Valid @RequestBody SubtreeRegenerationRequestDto request) {
@@ -100,6 +105,7 @@ public class AiController {
      * Index a character for RAG-based chat
      * Returns a reactive Mono for non-blocking execution
      */
+    @Operation(summary = "캐릭터 인덱싱")
     @PostMapping("/chat/index-character")
     public Mono<ResponseEntity<Boolean>> indexCharacter(@Valid @RequestBody CharacterIndexRequestDto request) {
         log.info("=== Index Character Request ===");
@@ -115,6 +121,7 @@ public class AiController {
      * Send a message to character chatbot
      * Returns a reactive Mono for non-blocking execution
      */
+    @Operation(summary = "캐릭터 챗봇 메시지 전송")
     @PostMapping("/chat/message")
     public Mono<ResponseEntity<ChatMessageResponseDto>> sendChatMessage(
             @Valid @RequestBody ChatMessageRequestDto request) {
@@ -132,6 +139,7 @@ public class AiController {
      * Health check for relay server and AI servers
      * Returns a reactive Mono for non-blocking execution
      */
+    @Operation(summary = "헬스 체크")
     @GetMapping("/health")
     public Mono<ResponseEntity<Map<String, Object>>> health() {
         log.debug("Health check request");
