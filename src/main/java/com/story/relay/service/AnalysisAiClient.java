@@ -40,6 +40,27 @@ public class AnalysisAiClient {
     }
 
     /**
+     * Analyze novel from S3
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @SuppressWarnings("unchecked")
+    public Mono<Map<String, Object>> analyzeFromS3(Map<String, Object> request) {
+        log.info("Calling analysis AI server for S3 novel analysis");
+
+        return analysisAiWebClient.post()
+            .uri("/analyze-from-s3")
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(Map.class)
+            .map(response -> (Map<String, Object>) response)
+            .timeout(Duration.ofMinutes(3))
+            .doOnSuccess(response -> log.info("S3 novel analysis completed successfully"))
+            .doOnError(e -> log.error("AI server error during S3 analysis: {}", e.getMessage(), e))
+            .onErrorMap(e -> new RuntimeException("S3 analysis failed: " + e.getMessage()))
+            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+    }
+
+    /**
      * Generate full story via AI server
      * Returns a reactive Mono for non-blocking execution
      */
@@ -57,6 +78,27 @@ public class AnalysisAiClient {
             .doOnSuccess(response -> log.info("Story generation completed successfully"))
             .doOnError(e -> log.error("AI server error during generation: {}", e.getMessage(), e))
             .onErrorMap(e -> new RuntimeException("Story generation failed: " + e.getMessage()))
+            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+    }
+
+    /**
+     * Generate next episode
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @SuppressWarnings("unchecked")
+    public Mono<Map<String, Object>> generateNextEpisode(Map<String, Object> request) {
+        log.info("Calling analysis AI server for next episode generation");
+
+        return analysisAiWebClient.post()
+            .uri("/generate-next-episode")
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(Map.class)
+            .map(response -> (Map<String, Object>) response)
+            .timeout(Duration.ofMinutes(10))
+            .doOnSuccess(response -> log.info("Next episode generation completed successfully"))
+            .doOnError(e -> log.error("AI server error during next episode generation: {}", e.getMessage(), e))
+            .onErrorMap(e -> new RuntimeException("Next episode generation failed: " + e.getMessage()))
             .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
     }
 

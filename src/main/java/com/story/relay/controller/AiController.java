@@ -39,14 +39,40 @@ public class AiController {
     @PostMapping("/analyze")
     public Mono<ResponseEntity<Map<String, Object>>> analyzeNovel(@RequestBody Map<String, Object> request) {
         log.info("=== Analyze Novel Request ===");
+        log.info("Received request keys: {}", request.keySet());
+
+        // Check both camelCase and snake_case
         Object novelText = request.get("novelText");
+        Object novel_text = request.get("novel_text");
+
+        log.info("novelText (camelCase) is null: {}", novelText == null);
+        log.info("novel_text (snake_case) is null: {}", novel_text == null);
+
         if (novelText != null) {
-            log.info("Novel text length: {} characters", novelText.toString().length());
+            log.info("novelText length: {} characters", novelText.toString().length());
+        }
+        if (novel_text != null) {
+            log.info("novel_text length: {} characters", novel_text.toString().length());
         }
 
         return analysisAiClient.analyze(request)
                 .map(ResponseEntity::ok)
                 .doOnSuccess(response -> log.info("Analysis completed successfully"));
+    }
+
+    /**
+     * Analyze novel from S3
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "S3에서 소설 분석")
+    @PostMapping("/analyze-from-s3")
+    public Mono<ResponseEntity<Map<String, Object>>> analyzeNovelFromS3(@RequestBody Map<String, Object> request) {
+        log.info("=== Analyze Novel From S3 Request ===");
+        log.info("Received request keys: {}", request.keySet());
+
+        return analysisAiClient.analyzeFromS3(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("S3 analysis completed successfully"));
     }
 
     /**
@@ -80,6 +106,21 @@ public class AiController {
                 .map(ResponseEntity::ok)
                 .doOnSuccess(response -> log.info("Image generation completed: {}",
                         response.getBody().getImageUrl()));
+    }
+
+    /**
+     * Generate next episode
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "다음 에피소드 생성")
+    @PostMapping("/generate-next-episode")
+    public Mono<ResponseEntity<Map<String, Object>>> generateNextEpisode(@RequestBody Map<String, Object> request) {
+        log.info("=== Generate Next Episode Request ===");
+        log.info("Request: {}", request.keySet());
+
+        return analysisAiClient.generateNextEpisode(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Next episode generation completed successfully"));
     }
 
     /**

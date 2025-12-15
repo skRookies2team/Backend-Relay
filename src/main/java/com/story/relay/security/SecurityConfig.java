@@ -40,10 +40,9 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/swagger-resources/**"
                         ).permitAll()
-                        .pathMatchers("/ai/health").permitAll()  // Health check
 
-                        // All other AI endpoints require authentication
-                        .pathMatchers("/ai/**").authenticated()
+                        // AI endpoints - permitAll for internal service communication
+                        .pathMatchers("/ai/**").permitAll()
 
                         // Deny all other requests
                         .anyExchange().denyAll()
