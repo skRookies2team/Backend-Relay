@@ -33,6 +33,7 @@ public class RagAiClient {
 
     /**
      * Index a character for RAG-based chat
+     * AI-NPC 서버가 백엔드 DTO를 직접 받으므로 단순히 전달만 함
      * Returns a reactive Mono for non-blocking execution
      */
     public Mono<Boolean> indexCharacter(CharacterIndexRequestDto request) {
@@ -57,6 +58,7 @@ public class RagAiClient {
 
     /**
      * Send a message to character chatbot
+     * AI-NPC 서버가 백엔드 DTO를 직접 받으므로 단순히 전달만 함
      * Returns a reactive Mono for non-blocking execution
      */
     public Mono<ChatMessageResponseDto> sendMessage(ChatMessageRequestDto request) {
