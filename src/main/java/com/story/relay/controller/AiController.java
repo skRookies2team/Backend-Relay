@@ -109,6 +109,21 @@ public class AiController {
     }
 
     /**
+     * Finalize analysis - generate final endings based on selected gauges
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "분석 완료 - 선택된 게이지로 최종 엔딩 생성")
+    @PostMapping("/finalize-analysis")
+    public Mono<ResponseEntity<Map<String, Object>>> finalizeAnalysis(@RequestBody Map<String, Object> request) {
+        log.info("=== Finalize Analysis Request ===");
+        log.info("Request keys: {}", request.keySet());
+
+        return analysisAiClient.finalizeAnalysis(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Finalize analysis completed successfully"));
+    }
+
+    /**
      * Generate next episode
      * Returns a reactive Mono for non-blocking execution
      */
