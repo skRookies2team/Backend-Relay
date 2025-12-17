@@ -1,0 +1,16 @@
+.gradle
+build
+bin
+.idea
+.git
+.gitignore
+*.md
+.env
+.env.*
+.env.example
+gradle-wrapper.jar
+gradlew
+gradlew.bat
+*.log
+.DS_Store
+.claude
