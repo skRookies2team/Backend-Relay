@@ -2,6 +2,7 @@ package com.story.relay.controller;
 
 import com.story.relay.dto.CharacterIndexRequestDto;
 import com.story.relay.dto.ChatMessageRequestDto;
+import com.story.relay.dto.GameProgressUpdateRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
 import com.story.relay.dto.ImageGenerationRequestDto;
 import com.story.relay.dto.ImageGenerationResponseDto;
@@ -109,6 +110,21 @@ public class AiController {
     }
 
     /**
+     * Finalize analysis - generate final endings based on selected gauges
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "분석 완료 - 선택된 게이지로 최종 엔딩 생성")
+    @PostMapping("/finalize-analysis")
+    public Mono<ResponseEntity<Map<String, Object>>> finalizeAnalysis(@RequestBody Map<String, Object> request) {
+        log.info("=== Finalize Analysis Request ===");
+        log.info("Request keys: {}", request.keySet());
+
+        return analysisAiClient.finalizeAnalysis(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Finalize analysis completed successfully"));
+    }
+
+    /**
      * Generate next episode
      * Returns a reactive Mono for non-blocking execution
      */
@@ -174,6 +190,26 @@ public class AiController {
                 .map(ResponseEntity::ok)
                 .doOnSuccess(response -> log.info("Chat response: {}",
                         response.getBody().getAiMessage()));
+    }
+
+
+    /**
+     * Update game progress to NPC AI server
+     * Called when player progresses through story
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "게임 진행 상황 업데이트")
+    @PostMapping("/chat/update-progress")
+    public Mono<ResponseEntity<Boolean>> updateGameProgress(
+            @Valid @RequestBody GameProgressUpdateRequestDto request) {
+        log.info("=== Update Game Progress Request ===");
+        log.info("Character: {}", request.getCharacterId());
+        log.info("Content length: {}", request.getContent() != null ? request.getContent().length() : 0);
+
+        return ragAiClient.updateGameProgress(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Game progress update: {}",
+                        response.getBody() ? "success" : "failed"));
     }
 
     /**

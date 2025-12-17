@@ -103,6 +103,27 @@ public class AnalysisAiClient {
     }
 
     /**
+     * Finalize analysis - generate final endings based on selected gauges
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @SuppressWarnings("unchecked")
+    public Mono<Map<String, Object>> finalizeAnalysis(Map<String, Object> request) {
+        log.info("Calling analysis AI server for finalizing analysis (generating final endings)");
+
+        return analysisAiWebClient.post()
+            .uri("/finalize-analysis")
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(Map.class)
+            .map(response -> (Map<String, Object>) response)
+            .timeout(Duration.ofMinutes(3))
+            .doOnSuccess(response -> log.info("Final endings generation completed successfully"))
+            .doOnError(e -> log.error("AI server error during finalize analysis: {}", e.getMessage(), e))
+            .onErrorMap(e -> new RuntimeException("Finalize analysis failed: " + e.getMessage()))
+            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+    }
+
+    /**
      * Regenerate subtree from a modified node
      * Returns a reactive Mono for non-blocking execution
      */

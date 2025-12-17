@@ -20,7 +20,7 @@ ai-servers:
     timeout: 30000   # 30초 (이미지 생성 시간)
   rag:
     url: ${AI_RAG_URL:http://localhost:8002}
-    timeout: 10000   # 10초 (챗봇 응답 시간)
+    timeout: 30000   # 30초 (RAG 학습 및 챗봇 응답 시간)
 
 # AWS S3 설정
 aws:
