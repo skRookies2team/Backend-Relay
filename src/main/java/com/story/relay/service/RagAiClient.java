@@ -3,6 +3,7 @@ package com.story.relay.service;
 import com.story.relay.dto.CharacterIndexRequestDto;
 import com.story.relay.dto.ChatMessageRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
+import com.story.relay.dto.GameProgressUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -191,4 +192,40 @@ public class RagAiClient {
             .timestamp(Instant.now().toString())
             .build();
     }
+
+    /**
+     * Update game progress to NPC AI server
+     * Called when player makes choices and progresses through story
+     * Returns a reactive Mono for non-blocking execution
+     */
+    public Mono<Boolean> updateGameProgress(GameProgressUpdateRequestDto request) {
+        log.info("Updating game progress for character: {}", request.getCharacterId());
+
+        // Build request for /api/ai/update
+        Map<String, Object> updateRequest = new HashMap<>();
+        updateRequest.put("session_id", request.getCharacterId());
+        updateRequest.put("content", request.getContent());
+        updateRequest.put("metadata", request.getMetadata() != null ? request.getMetadata() : new HashMap<>());
+
+        return ragServerWebClient.post()
+                .uri("/api/ai/update")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(updateRequest)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofMillis(timeout))
+                .map(response -> {
+                    String status = (String) response.get("status");
+                    return "updated".equals(status);
+                })
+                .doOnSuccess(success -> {
+                    if (success) {
+                        log.info("Game progress updated successfully for: {}", request.getCharacterId());
+                    }
+                })
+                .doOnError(e -> log.error("Failed to update game progress for {}: {}",
+                        request.getCharacterId(), e.getMessage()))
+                .onErrorReturn(false);
+    }
+
 }
