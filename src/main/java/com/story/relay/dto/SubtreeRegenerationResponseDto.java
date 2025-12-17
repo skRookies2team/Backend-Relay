@@ -1,8 +1,11 @@
 package com.story.relay.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
@@ -12,6 +15,8 @@ import java.util.Map;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SubtreeRegenerationResponseDto {
     private String status;
     private String message;
@@ -20,25 +25,44 @@ public class SubtreeRegenerationResponseDto {
 
     @Getter
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class RegeneratedNode {
-        @JsonProperty("id")  // Python returns "id", map to nodeId
+        @JsonProperty("id")
         private String nodeId;
 
         private String text;
-        private List<String> choices;
+        private List<ChoiceDto> choices;
         private Integer depth;
-        private String parentId;  // Optional, may be null
+        private String parentId;
         private NodeDetails details;
 
-        @JsonProperty("children")  // Ignore children array from Python
-        private List<Map<String, Object>> children;  // Accept but don't use
+        @JsonProperty("children")
+        private List<RegeneratedNode> children;  // ✅ 재귀적 구조 지원
 
         @Getter
         @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
         public static class NodeDetails {
             private String situation;
+            
+            @JsonProperty("npcEmotions")
             private Map<String, String> npcEmotions;
+            
             private List<String> tags;
         }
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChoiceDto {
+        private String text;
+        private List<String> tags;
+        
+        @JsonAlias("immediate_reaction")
+        private String immediateReaction;
     }
 }
