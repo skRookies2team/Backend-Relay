@@ -37,7 +37,7 @@ public class SubtreeRegenerationRequestDto {
     @Min(value = 1, message = "Max depth must be at least 1")
     private Integer maxDepth;
 
-    @NotBlank(message = "Novel context is required")
+    // Novel context is optional when cached data (summary, charactersJson, gaugesJson) is provided
     @Size(max = 10000, message = "Novel context must not exceed 10000 characters")
     private String novelContext;
 
