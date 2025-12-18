@@ -4,6 +4,7 @@ import com.story.relay.dto.CharacterIndexRequestDto;
 import com.story.relay.dto.ChatMessageRequestDto;
 import com.story.relay.dto.GameProgressUpdateRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
+import com.story.relay.dto.NovelIndexRequestDto;
 import com.story.relay.dto.ImageGenerationRequestDto;
 import com.story.relay.dto.ImageGenerationResponseDto;
 import com.story.relay.dto.SubtreeRegenerationRequestDto;
@@ -171,6 +172,23 @@ public class AiController {
         return ragAiClient.indexCharacter(request)
                 .map(ResponseEntity::ok)
                 .doOnSuccess(response -> log.info("Character indexing {}",
+                        response.getBody() ? "successful" : "failed"));
+    }
+
+    /**
+     * Index a novel for RAG-based character chat
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "소설 인덱싱")
+    @PostMapping("/chat/index-novel")
+    public Mono<ResponseEntity<Boolean>> indexNovel(@Valid @RequestBody NovelIndexRequestDto request) {
+        log.info("=== Index Novel Request ===");
+        log.info("Story: {} ({})", request.getTitle(), request.getStoryId());
+        log.info("File: {}/{}", request.getBucket(), request.getFileKey());
+
+        return ragAiClient.indexNovel(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Novel indexing {}",
                         response.getBody() ? "successful" : "failed"));
     }
 

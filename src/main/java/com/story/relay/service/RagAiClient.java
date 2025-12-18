@@ -4,6 +4,7 @@ import com.story.relay.dto.CharacterIndexRequestDto;
 import com.story.relay.dto.ChatMessageRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
 import com.story.relay.dto.GameProgressUpdateRequestDto;
+import com.story.relay.dto.NovelIndexRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,6 +81,43 @@ public class RagAiClient {
                 })
                 .doOnError(e -> log.error("Failed to index character {}: {}",
                         request.getCharacterId(), e.getMessage()))
+                .onErrorReturn(false);
+    }
+
+    /**
+     * Index a novel for RAG-based character chat
+     * Calls AI-NPC's /api/ai/train-from-s3 endpoint
+     * Returns a reactive Mono for non-blocking execution
+     */
+    public Mono<Boolean> indexNovel(NovelIndexRequestDto request) {
+        log.info("Indexing novel: {} ({})", request.getTitle(), request.getStoryId());
+        log.info("File key: {}, Bucket: {}", request.getFileKey(), request.getBucket());
+
+        // Build request for /api/ai/train-from-s3
+        Map<String, String> trainRequest = new HashMap<>();
+        trainRequest.put("session_id", request.getStoryId());
+        trainRequest.put("file_key", request.getFileKey());
+        trainRequest.put("bucket", request.getBucket());
+        trainRequest.put("character_name", request.getTitle());  // 스토리 제목을 캐릭터명으로 사용
+
+        return ragServerWebClient.post()
+                .uri("/api/ai/train-from-s3")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(trainRequest)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofMillis(timeout))
+                .map(response -> {
+                    String status = (String) response.get("status");
+                    return "trained".equals(status);
+                })
+                .doOnSuccess(success -> {
+                    if (success) {
+                        log.info("Novel indexed successfully: {}", request.getStoryId());
+                    }
+                })
+                .doOnError(e -> log.error("Failed to index novel {}: {}",
+                        request.getStoryId(), e.getMessage()))
                 .onErrorReturn(false);
     }
 
