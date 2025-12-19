@@ -49,6 +49,11 @@ public class ImageGenerationAiClient {
      * Returns a reactive Mono for non-blocking execution
      */
     public Mono<ImageGenerationResponseDto> generateImage(ImageGenerationRequestDto request) {
+        if (request.getGenerateImage() != null && !request.getGenerateImage()) {
+            log.info("Image generation skipped as per request.");
+            return Mono.just(ImageGenerationResponseDto.builder().build());
+        }
+
         log.info("Requesting image generation from AI-IMAGE server");
         log.debug("Request details: nodeText={}, situation={}, episodeTitle={}",
             request.getNodeText(), request.getSituation(), request.getEpisodeTitle());

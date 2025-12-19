@@ -46,6 +46,9 @@ public class ImageGenerationRequestDto {
     @Size(max = 500, message = "Additional context must not exceed 500 characters")
     private String additionalContext;
 
+    @Builder.Default
+    private Boolean generateImage = true;
+
     private String novelS3Bucket;
 
     private String novelS3Key;
