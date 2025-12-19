@@ -1,6 +1,7 @@
 package com.story.relay.service;
 
 import com.story.relay.dto.CharacterIndexRequestDto;
+import com.story.relay.dto.CharacterSetRequestDto;
 import com.story.relay.dto.ChatMessageRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
 import com.story.relay.dto.GameProgressUpdateRequestDto;
@@ -262,6 +263,45 @@ public class RagAiClient {
                     }
                 })
                 .doOnError(e -> log.error("Failed to update game progress for {}: {}",
+                        request.getCharacterId(), e.getMessage()))
+                .onErrorReturn(false);
+    }
+
+    /**
+     * Set character information without training
+     * Updates character persona/description in the RAG system
+     * Returns a reactive Mono for non-blocking execution
+     */
+    public Mono<Boolean> setCharacter(CharacterSetRequestDto request) {
+        log.info("Setting character: {} ({})", request.getCharacterName(), request.getCharacterId());
+
+        // Build request for /api/ai/character
+        Map<String, String> characterRequest = new HashMap<>();
+        characterRequest.put("session_id", request.getCharacterId());
+        characterRequest.put("character_name", request.getCharacterName());
+        if (request.getCharacterDescription() != null && !request.getCharacterDescription().isEmpty()) {
+            characterRequest.put("character_description", request.getCharacterDescription());
+        } else {
+            characterRequest.put("character_description", "");
+        }
+
+        return ragServerWebClient.post()
+                .uri("/api/ai/character")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(characterRequest)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofMillis(timeout))
+                .map(response -> {
+                    String status = (String) response.get("status");
+                    return "character_set".equals(status);
+                })
+                .doOnSuccess(success -> {
+                    if (success) {
+                        log.info("Character set successfully: {}", request.getCharacterId());
+                    }
+                })
+                .doOnError(e -> log.error("Failed to set character {}: {}",
                         request.getCharacterId(), e.getMessage()))
                 .onErrorReturn(false);
     }

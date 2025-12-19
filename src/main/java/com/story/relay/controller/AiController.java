@@ -1,6 +1,7 @@
 package com.story.relay.controller;
 
 import com.story.relay.dto.CharacterIndexRequestDto;
+import com.story.relay.dto.CharacterSetRequestDto;
 import com.story.relay.dto.ChatMessageRequestDto;
 import com.story.relay.dto.GameProgressUpdateRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
@@ -227,6 +228,24 @@ public class AiController {
         return ragAiClient.updateGameProgress(request)
                 .map(ResponseEntity::ok)
                 .doOnSuccess(response -> log.info("Game progress update: {}",
+                        response.getBody() ? "success" : "failed"));
+    }
+
+    /**
+     * Set character information without training
+     * Updates character persona/description in the RAG system
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "캐릭터 정보 설정")
+    @PostMapping("/chat/set-character")
+    public Mono<ResponseEntity<Boolean>> setCharacter(
+            @Valid @RequestBody CharacterSetRequestDto request) {
+        log.info("=== Set Character Request ===");
+        log.info("Character: {} ({})", request.getCharacterName(), request.getCharacterId());
+
+        return ragAiClient.setCharacter(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Character set: {}",
                         response.getBody() ? "success" : "failed"));
     }
 
