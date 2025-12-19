@@ -6,6 +6,7 @@ import com.story.relay.dto.ChatMessageRequestDto;
 import com.story.relay.dto.GameProgressUpdateRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
 import com.story.relay.dto.NovelIndexRequestDto;
+import com.story.relay.dto.NovelStyleLearnRequestDto;
 import com.story.relay.dto.ImageGenerationRequestDto;
 import com.story.relay.dto.ImageGenerationResponseDto;
 import com.story.relay.dto.SubtreeRegenerationRequestDto;
@@ -91,6 +92,23 @@ public class AiController {
         return analysisAiClient.generate(request)
                 .map(ResponseEntity::ok)
                 .doOnSuccess(response -> log.info("Story generation completed successfully"));
+    }
+
+    /**
+     * Learn novel style in AI-IMAGE server
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "소설 스타일 학습")
+    @PostMapping("/learn-novel-style")
+    public Mono<ResponseEntity<Boolean>> learnNovelStyle(
+            @Valid @RequestBody NovelStyleLearnRequestDto request) {
+        log.info("=== Learn Novel Style Request ===");
+        log.info("Story ID: {}", request.getStory_id());
+
+        return imageGenerationAiClient.learnNovelStyle(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> log.info("Novel style learning: {}",
+                        response.getBody() ? "success" : "failed"));
     }
 
     /**

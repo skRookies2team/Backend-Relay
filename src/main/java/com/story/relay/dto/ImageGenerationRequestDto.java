@@ -16,6 +16,10 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 public class ImageGenerationRequestDto {
+    private String storyId;
+
+    private String nodeId;
+
     @NotBlank(message = "Node text is required")
     @Size(max = 1000, message = "Node text must not exceed 1000 characters")
     private String nodeText;
@@ -41,4 +45,8 @@ public class ImageGenerationRequestDto {
 
     @Size(max = 500, message = "Additional context must not exceed 500 characters")
     private String additionalContext;
+
+    private String novelS3Bucket;
+
+    private String novelS3Key;
 }
