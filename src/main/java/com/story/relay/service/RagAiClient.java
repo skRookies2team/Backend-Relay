@@ -9,15 +9,11 @@ import com.story.relay.dto.NovelIndexRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -43,37 +39,31 @@ public class RagAiClient {
 
     /**
      * Index a character for RAG-based chat
-     * Converts character data to text file and calls /api/ai/train
+     * Uses /api/ai/character endpoint to set character information
      * Returns a reactive Mono for non-blocking execution
      */
     public Mono<Boolean> indexCharacter(CharacterIndexRequestDto request) {
         log.info("Indexing character: {} ({})", request.getName(), request.getCharacterId());
 
-        // Convert character data to text content
-        String characterText = buildCharacterText(request);
-        byte[] textBytes = characterText.getBytes(StandardCharsets.UTF_8);
+        // Build character description from request data
+        String characterDescription = buildCharacterDescription(request);
 
-        // Build multipart form data
-        MultipartBodyBuilder builder = new MultipartBodyBuilder();
-        builder.part("file", new ByteArrayResource(textBytes) {
-            @Override
-            public String getFilename() {
-                return request.getCharacterId() + "_character.txt";
-            }
-        }, MediaType.TEXT_PLAIN);
-        builder.part("session_id", request.getCharacterId());
-        builder.part("character_name", request.getName());
+        // Build request for /api/ai/character
+        Map<String, String> characterRequest = new HashMap<>();
+        characterRequest.put("session_id", request.getCharacterId());
+        characterRequest.put("character_name", request.getName());
+        characterRequest.put("character_description", characterDescription);
 
         return ragServerWebClient.post()
-                .uri("/api/ai/train")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(BodyInserters.fromMultipartData(builder.build()))
+                .uri("/api/ai/character")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(characterRequest)
                 .retrieve()
                 .bodyToMono(Map.class)
                 .timeout(Duration.ofMillis(timeout))
                 .map(response -> {
                     String status = (String) response.get("status");
-                    return "trained".equals(status);
+                    return "character_set".equals(status);
                 })
                 .doOnSuccess(success -> {
                     if (success) {
@@ -173,12 +163,10 @@ public class RagAiClient {
     }
 
     /**
-     * Build character text from CharacterIndexRequestDto
+     * Build character description from CharacterIndexRequestDto
      */
-    private String buildCharacterText(CharacterIndexRequestDto request) {
+    private String buildCharacterDescription(CharacterIndexRequestDto request) {
         StringBuilder sb = new StringBuilder();
-
-        sb.append("캐릭터 이름: ").append(request.getName()).append("\n\n");
 
         if (request.getDescription() != null && !request.getDescription().isEmpty()) {
             sb.append("설명:\n").append(request.getDescription()).append("\n\n");
