@@ -68,15 +68,20 @@ public class ImageGenerationAiClient {
         }
 
         // Build request for AI-IMAGE server
-        // Use actual story_id and node_id from request, fallback to generated UUIDs if not provided
         String storyId = request.getStoryId() != null ? request.getStoryId() : "story_" + UUID.randomUUID().toString();
-        String nodeId = request.getNodeId() != null ? request.getNodeId() : "node_" + UUID.randomUUID().toString();
 
         Map<String, Object> aiImageRequest = new HashMap<>();
         aiImageRequest.put("story_id", storyId);
-        aiImageRequest.put("node_id", nodeId);
         aiImageRequest.put("user_prompt", promptBuilder.toString());
-        aiImageRequest.put("node_text", request.getNodeText());
+        aiImageRequest.put("context_text", request.getNodeText());  // AI-IMAGE 서버는 context_text 사용
+
+        // S3 presigned URL 전달 (백엔드에서 생성한 업로드용 URL)
+        if (request.getImageS3Url() != null && !request.getImageS3Url().isEmpty()) {
+            aiImageRequest.put("s3_url", request.getImageS3Url());
+            log.debug("S3 presigned URL included for image upload");
+        } else {
+            log.warn("No S3 presigned URL provided - AI-IMAGE server may fail to upload image");
+        }
 
         return imageGenerationAiWebClient.post()
                 .uri("/api/v1/generate-image")

@@ -52,4 +52,6 @@ public class ImageGenerationRequestDto {
     private String novelS3Bucket;
 
     private String novelS3Key;
+
+    private String imageS3Url;  // 이미지 업로드용 S3 presigned URL (AI-IMAGE 서버로 전달)
 }
