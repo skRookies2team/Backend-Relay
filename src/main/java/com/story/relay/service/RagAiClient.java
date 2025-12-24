@@ -118,12 +118,13 @@ public class RagAiClient {
      * Returns a reactive Mono for non-blocking execution
      */
     public Mono<ChatMessageResponseDto> sendMessage(ChatMessageRequestDto request) {
-        log.info("Sending message to character: {}", request.getCharacterId());
+        log.info("Sending message to character: {} ({})", request.getCharacterName(), request.getCharacterId());
         log.info("User message: {}", request.getUserMessage());
 
         // Build request for /api/ai/chat
         Map<String, String> chatRequest = new HashMap<>();
         chatRequest.put("session_id", request.getCharacterId());
+        chatRequest.put("character_name", request.getCharacterName() != null ? request.getCharacterName() : "캐릭터");
         chatRequest.put("message", request.getUserMessage());
 
         return ragServerWebClient.post()

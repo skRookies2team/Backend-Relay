@@ -20,6 +20,9 @@ public class ChatMessageRequestDto {
     @Size(max = 100, message = "Character ID must not exceed 100 characters")
     private String characterId;
 
+    @Size(max = 100, message = "Character name must not exceed 100 characters")
+    private String characterName;  // 캐릭터 이름 (RAG 서버로 전달)
+
     @NotBlank(message = "User message is required")
     @Size(max = 2000, message = "User message must not exceed 2000 characters")
     private String userMessage;
