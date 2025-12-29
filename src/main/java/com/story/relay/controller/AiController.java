@@ -12,9 +12,12 @@ import com.story.relay.dto.ImageGenerationRequestDto;
 import com.story.relay.dto.ImageGenerationResponseDto;
 import com.story.relay.dto.SubtreeRegenerationRequestDto;
 import com.story.relay.dto.SubtreeRegenerationResponseDto;
+import com.story.relay.dto.MusicRequestDto;
+import com.story.relay.dto.MusicResponseDto;
 import com.story.relay.service.AnalysisAiClient;
 import com.story.relay.service.ImageGenerationAiClient;
 import com.story.relay.service.RagAiClient;
+import com.story.relay.service.MusicRecommendationAiClient;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,7 @@ public class AiController {
     private final AnalysisAiClient analysisAiClient;
     private final ImageGenerationAiClient imageGenerationAiClient;
     private final RagAiClient ragAiClient;
+    private final MusicRecommendationAiClient musicRecommendationAiClient;
 
     /**
      * Analyze novel text to extract summary, characters, and gauges
@@ -275,6 +279,29 @@ public class AiController {
     }
 
     /**
+     * Recommend music based on scene description
+     * Returns a reactive Mono for non-blocking execution
+     */
+    @Operation(summary = "씬 기반 음악 추천")
+    @PostMapping("/recommend-music")
+    public Mono<ResponseEntity<MusicResponseDto>> recommendMusic(
+            @Valid @RequestBody MusicRequestDto request) {
+        log.info("=== Music Recommendation Request ===");
+        log.info("Prompt: {}", request.getPrompt().length() > 100 ?
+                request.getPrompt().substring(0, 100) + "..." : request.getPrompt());
+
+        return musicRecommendationAiClient.recommendMusic(request)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> {
+                    if (response.getBody() != null && response.getBody().getMusic() != null) {
+                        log.info("Music recommended: mood={}, file={}",
+                                response.getBody().getMusic().getMood(),
+                                response.getBody().getMusic().getFilename());
+                    }
+                });
+    }
+
+    /**
      * Health check for relay server and AI servers
      * Returns a reactive Mono for non-blocking execution
      */
@@ -286,11 +313,13 @@ public class AiController {
         return Mono.zip(
                 analysisAiClient.checkHealth(),
                 imageGenerationAiClient.checkHealth(),
-                ragAiClient.checkHealth()
+                ragAiClient.checkHealth(),
+                musicRecommendationAiClient.checkHealth()
         ).map(tuple -> {
             boolean analysisHealthy = tuple.getT1();
             boolean imageHealthy = tuple.getT2();
             boolean ragHealthy = tuple.getT3();
+            boolean musicHealthy = tuple.getT4();
 
             Map<String, Object> health = new HashMap<>();
             health.put("status", "healthy");
@@ -309,6 +338,10 @@ public class AiController {
             Map<String, Object> ragAiHealth = new HashMap<>();
             ragAiHealth.put("status", ragHealthy ? "up" : "down");
             aiServers.put("ragAi", ragAiHealth);
+
+            Map<String, Object> musicAiHealth = new HashMap<>();
+            musicAiHealth.put("status", musicHealthy ? "up" : "down");
+            aiServers.put("musicAi", musicAiHealth);
 
             health.put("aiServers", aiServers);
 

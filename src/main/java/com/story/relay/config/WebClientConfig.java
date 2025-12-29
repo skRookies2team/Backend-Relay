@@ -36,6 +36,12 @@ public class WebClientConfig {
     @Value("${ai-servers.rag.timeout:10000}")
     private int ragTimeout;
 
+    @Value("${ai-servers.music.url:http://localhost:5001}")
+    private String musicAiUrl;
+
+    @Value("${ai-servers.music.timeout:10000}")
+    private int musicTimeout;
+
     @Bean
     public WebClient analysisAiWebClient() {
         HttpClient httpClient = HttpClient.create()
@@ -79,6 +85,22 @@ public class WebClientConfig {
 
         return WebClient.builder()
                 .baseUrl(ragServerUrl)
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
+
+    @Bean
+    public WebClient musicAiWebClient() {
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, musicTimeout)
+                .responseTimeout(Duration.ofMillis(musicTimeout))
+                .doOnConnected(conn ->
+                        conn.addHandlerLast(new ReadTimeoutHandler(musicTimeout, TimeUnit.MILLISECONDS))
+                            .addHandlerLast(new WriteTimeoutHandler(musicTimeout, TimeUnit.MILLISECONDS)));
+
+        return WebClient.builder()
+                .baseUrl(musicAiUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
