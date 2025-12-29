@@ -7,6 +7,7 @@ AI 서버들(분석 AI, 이미지 생성 AI 등)과의 통신을 전담하는 �
 이 서버는 백엔드와 여러 AI 서버들 사이의 중계 역할을 수행합니다:
 - 소설 분석 AI와 통신
 - 이미지 생성 AI와 통신
+- 음악 추천 AI와 통신 (BGM 분위기 분석 및 스트리밍 URL 제공)
 - 생성된 이미지를 S3에 업로드
 - 요청/응답 포맷 변환
 
@@ -29,10 +30,13 @@ relay-server/
 │   ├── service/
 │   │   ├── AnalysisAiClient.java       # 분석 AI 통신
 │   │   ├── ImageGenerationAiClient.java # 이미지 AI 통신
+│   │   ├── MusicRecommendationAiClient.java # 음악 추천 AI 통신
 │   │   └── S3UploadService.java        # S3 업로드
 │   ├── dto/
 │   │   ├── ImageGenerationRequestDto.java
-│   │   └── ImageGenerationResponseDto.java
+│   │   ├── ImageGenerationResponseDto.java
+│   │   ├── MusicRequestDto.java
+│   │   └── MusicResponseDto.java
 │   └── config/
 │       ├── WebClientConfig.java        # WebClient 설정
 │       └── S3Config.java               # S3 Client 설정
@@ -65,7 +69,7 @@ Content-Type: application/json
 }
 ```
 
-### 3. 이미지 생성 (신규)
+### 3. 이미지 생성
 ```http
 POST /ai/generate-image
 Content-Type: application/json
@@ -89,7 +93,36 @@ Content-Type: application/json
 }
 ```
 
-### 4. Health Check
+### 4. 음악 추천 (BGM)
+```http
+POST /ai/recommend-music
+Content-Type: application/json
+
+{
+  "prompt": "어두운 복도를 걸어가는 주인공. 긴장감이 감돌고 있다."
+}
+```
+
+**Response:**
+```json
+{
+  "analysis": {
+    "primary_mood": "tense",
+    "secondary_mood": "mysterious",
+    "intensity": 0.75,
+    "emotional_tags": ["suspenseful", "dark", "atmospheric"],
+    "reasoning": "긴장감과 미스터리한 분위기"
+  },
+  "music": {
+    "mood": "tense",
+    "filename": "tense_01.mp3",
+    "file_path": "music/tense/tense_01.mp3",
+    "streaming_url": "https://storage.googleapis.com/.../tense_01.mp3"
+  }
+}
+```
+
+### 5. Health Check
 ```http
 GET /ai/health
 ```
@@ -104,6 +137,8 @@ GET /ai/health
 # AI Servers
 AI_ANALYSIS_URL=http://localhost:8000
 AI_IMAGE_GENERATION_URL=http://localhost:8001
+AI_RAG_URL=http://localhost:8002
+AI_MUSIC_URL=http://localhost:5001
 
 # AWS S3
 AWS_S3_BUCKET=your-bucket-name
@@ -174,6 +209,9 @@ curl http://localhost:8081/ai/health
     },
     "imageGenerationAi": {
       "status": "up"
+    },
+    "musicRecommendationAi": {
+      "status": "up"
     }
   }
 }
@@ -196,6 +234,34 @@ curl -X POST http://localhost:8081/ai/generate-image \
   "imageUrl": "https://via.placeholder.com/800x600/1a1a1a/ffffff?text=첫+만남",
   "fileKey": "mock/image_uuid.png",
   "generatedAt": "2025-12-02T10:30:00Z"
+}
+```
+
+### 4. 음악 추천 테스트
+```bash
+curl -X POST http://localhost:8081/ai/recommend-music \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "어두운 복도를 걸어가는 주인공. 긴장감이 감돌고 있다."
+  }'
+```
+
+**실제 AI-BGM 서버 연동 시 응답:**
+```json
+{
+  "analysis": {
+    "primary_mood": "tense",
+    "secondary_mood": "mysterious",
+    "intensity": 0.75,
+    "emotional_tags": ["suspenseful", "dark", "atmospheric"],
+    "reasoning": "긴장감과 미스터리한 분위기"
+  },
+  "music": {
+    "mood": "tense",
+    "filename": "tense_01.mp3",
+    "file_path": "music/tense/tense_01.mp3",
+    "streaming_url": "https://storage.googleapis.com/.../tense_01.mp3"
+  }
 }
 ```
 
@@ -245,13 +311,14 @@ public ImageGenerationResponseDto generateImage(ImageGenerationRequestDto reques
 - [x] Phase 1: 기본 프로젝트 구조 생성
 - [x] Phase 2: WebClient 및 S3 설정
 - [x] Phase 3: Mock 이미지 생성 API
-- [ ] Phase 4: 분석 AI 연동 (기존 기능 이관)
-- [ ] Phase 5: 실제 이미지 생성 AI 연동
-- [ ] Phase 6: 에러 핸들링 강화
-- [ ] Phase 7: 로깅 및 모니터링
-- [ ] Phase 8: 캐싱 전략
-- [ ] Phase 9: 성능 테스트
-- [ ] Phase 10: 프로덕션 배포
+- [x] Phase 4: 음악 추천 AI 연동 (BGM 서비스)
+- [ ] Phase 5: 분석 AI 연동 (기존 기능 이관)
+- [ ] Phase 6: 실제 이미지 생성 AI 연동
+- [ ] Phase 7: 에러 핸들링 강화
+- [ ] Phase 8: 로깅 및 모니터링
+- [ ] Phase 9: 캐싱 전략
+- [ ] Phase 10: 성능 테스트
+- [ ] Phase 11: 프로덕션 배포
 
 ## 참고 문서
 
