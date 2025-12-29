@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -44,7 +45,14 @@ public class ImageGenerationAiClient {
                         log.info("Novel style learned successfully for story: {}", request.getStory_id());
                     }
                 })
-                .doOnError(e -> log.error("Failed to learn novel style: {}", e.getMessage()))
+                .doOnError(e -> {
+                    log.error("Failed to learn novel style: {}", e.getMessage(), e);
+                    if (e instanceof WebClientResponseException) {
+                        WebClientResponseException wcre = (WebClientResponseException) e;
+                        log.error("AI-IMAGE server error - Status: {}, Response: {}",
+                            wcre.getStatusCode(), wcre.getResponseBodyAsString());
+                    }
+                })
                 .onErrorReturn(NovelStyleLearnResponseDto.builder().build());
     }
 
