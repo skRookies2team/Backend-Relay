@@ -66,7 +66,14 @@ public class ImageGenerationAiClient {
             return Mono.just(ImageGenerationResponseDto.builder().build());
         }
 
-        log.info("Requesting image generation from AI-IMAGE server");
+        log.info("=== Image Generation Request from Backend ===");
+        log.info("  📍 Story ID: {}", request.getStoryId());
+        log.info("  📍 Node ID: {}", request.getNodeId());
+        log.info("  📍 Episode: {} (order: {})", request.getEpisodeTitle(), request.getEpisodeOrder());
+        log.info("  📍 Image Type: {}", request.getImageType());
+        log.info("  🔗 Image S3 URL: {}", request.getImageS3Url() != null ?
+            (request.getImageS3Url().length() > 100 ? request.getImageS3Url().substring(0, 100) + "..." : request.getImageS3Url())
+            : "NULL");
         log.debug("Request details: nodeText={}, situation={}, episodeTitle={}",
             request.getNodeText(), request.getSituation(), request.getEpisodeTitle());
 
@@ -90,9 +97,11 @@ public class ImageGenerationAiClient {
         // S3 presigned URL 전달 (백엔드에서 생성한 업로드용 URL)
         if (request.getImageS3Url() != null && !request.getImageS3Url().isEmpty()) {
             aiImageRequest.put("s3_url", request.getImageS3Url());
-            log.debug("S3 presigned URL included for image upload");
+            log.info("  ✅ S3 presigned URL included for AI-IMAGE server");
+            log.debug("     URL: {}", request.getImageS3Url().substring(0, Math.min(150, request.getImageS3Url().length())));
         } else {
-            log.warn("No S3 presigned URL provided - AI-IMAGE server may fail to upload image");
+            log.error("  ❌ No S3 presigned URL provided - AI-IMAGE server will fail!");
+            log.error("     imageS3Url is: {}", request.getImageS3Url() == null ? "NULL" : "EMPTY STRING");
         }
 
         return imageGenerationAiWebClient.post()
