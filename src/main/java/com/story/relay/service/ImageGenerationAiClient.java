@@ -3,6 +3,7 @@ package com.story.relay.service;
 import com.story.relay.dto.ImageGenerationRequestDto;
 import com.story.relay.dto.ImageGenerationResponseDto;
 import com.story.relay.dto.NovelStyleLearnRequestDto;
+import com.story.relay.dto.NovelStyleLearnResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,21 +28,24 @@ public class ImageGenerationAiClient {
      * Learn novel style in AI-IMAGE server
      * Returns a reactive Mono for non-blocking execution
      */
-    public Mono<Boolean> learnNovelStyle(NovelStyleLearnRequestDto request) {
+    public Mono<NovelStyleLearnResponseDto> learnNovelStyle(NovelStyleLearnRequestDto request) {
         log.info("Learning novel style for story: {}", request.getStory_id());
 
         return imageGenerationAiWebClient.post()
                 .uri("/api/v1/learn-style")
                 .bodyValue(request)
                 .retrieve()
-                .bodyToMono(Map.class)
+                .bodyToMono(NovelStyleLearnResponseDto.class)
                 .timeout(Duration.ofSeconds(30))
-                .map(response -> {
-                    log.info("Novel style learned successfully for story: {}", request.getStory_id());
-                    return true;
+                .doOnSuccess(response -> {
+                    if (response != null && response.getThumbnail_image_url() != null) {
+                        log.info("Novel style learned successfully with thumbnail: {}", response.getThumbnail_image_url());
+                    } else {
+                        log.info("Novel style learned successfully for story: {}", request.getStory_id());
+                    }
                 })
                 .doOnError(e -> log.error("Failed to learn novel style: {}", e.getMessage()))
-                .onErrorReturn(false);
+                .onErrorReturn(NovelStyleLearnResponseDto.builder().build());
     }
 
     /**

@@ -7,6 +7,7 @@ import com.story.relay.dto.GameProgressUpdateRequestDto;
 import com.story.relay.dto.ChatMessageResponseDto;
 import com.story.relay.dto.NovelIndexRequestDto;
 import com.story.relay.dto.NovelStyleLearnRequestDto;
+import com.story.relay.dto.NovelStyleLearnResponseDto;
 import com.story.relay.dto.ImageGenerationRequestDto;
 import com.story.relay.dto.ImageGenerationResponseDto;
 import com.story.relay.dto.SubtreeRegenerationRequestDto;
@@ -100,15 +101,21 @@ public class AiController {
      */
     @Operation(summary = "소설 스타일 학습")
     @PostMapping("/learn-novel-style")
-    public Mono<ResponseEntity<Boolean>> learnNovelStyle(
+    public Mono<ResponseEntity<NovelStyleLearnResponseDto>> learnNovelStyle(
             @Valid @RequestBody NovelStyleLearnRequestDto request) {
         log.info("=== Learn Novel Style Request ===");
         log.info("Story ID: {}", request.getStory_id());
 
         return imageGenerationAiClient.learnNovelStyle(request)
                 .map(ResponseEntity::ok)
-                .doOnSuccess(response -> log.info("Novel style learning: {}",
-                        response.getBody() ? "success" : "failed"));
+                .doOnSuccess(response -> {
+                    NovelStyleLearnResponseDto body = response.getBody();
+                    if (body != null && body.getThumbnail_image_url() != null) {
+                        log.info("Novel style learning completed with thumbnail: {}", body.getThumbnail_image_url());
+                    } else {
+                        log.info("Novel style learning completed");
+                    }
+                });
     }
 
     /**
