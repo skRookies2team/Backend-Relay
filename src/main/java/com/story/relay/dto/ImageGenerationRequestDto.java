@@ -40,6 +40,9 @@ public class ImageGenerationRequestDto {
     @Min(value = 0, message = "Node depth must be non-negative")
     private Integer nodeDepth;
 
+    @Size(max = 50, message = "Image type must not exceed 50 characters")
+    private String imageType;  // 이미지 타입 (SCENE, EPISODE_START, EPISODE_ENDING, FINAL_ENDING, THUMBNAIL)
+
     @Size(max = 100, message = "Image style must not exceed 100 characters")
     private String imageStyle;
 
