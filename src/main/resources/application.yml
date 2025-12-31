@@ -22,7 +22,7 @@ ai-servers:
     url: ${AI_RAG_URL:http://localhost:8002}
     timeout: 30000   # 30초 (RAG 학습 및 챗봇 응답 시간)
   music:
-    url: ${AI_MUSIC_URL:http://localhost:5001}
+    url: ${AI_MUSIC_URL:http://localhost:8003}
     timeout: 10000   # 10초 (음악 추천 시간)
 
 # AWS S3 설정
