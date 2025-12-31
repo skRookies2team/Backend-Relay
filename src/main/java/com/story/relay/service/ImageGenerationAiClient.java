@@ -46,14 +46,19 @@ public class ImageGenerationAiClient {
                     }
                 })
                 .doOnError(e -> {
-                    log.error("Failed to learn novel style: {}", e.getMessage(), e);
+                    log.error("Failed to learn novel style for story {}: {}",
+                        request.getStory_id(), e.getMessage(), e);
                     if (e instanceof WebClientResponseException) {
                         WebClientResponseException wcre = (WebClientResponseException) e;
                         log.error("AI-IMAGE server error - Status: {}, Response: {}",
                             wcre.getStatusCode(), wcre.getResponseBodyAsString());
                     }
                 })
-                .onErrorReturn(NovelStyleLearnResponseDto.builder().build());
+                .onErrorResume(e -> {
+                    log.warn("Novel style learning failed, returning empty response for story: {}",
+                        request.getStory_id());
+                    return Mono.just(NovelStyleLearnResponseDto.builder().build());
+                });
     }
 
     /**
@@ -67,11 +72,11 @@ public class ImageGenerationAiClient {
         }
 
         log.info("=== Image Generation Request from Backend ===");
-        log.info("  📍 Story ID: {}", request.getStoryId());
-        log.info("  📍 Node ID: {}", request.getNodeId());
-        log.info("  📍 Episode: {} (order: {})", request.getEpisodeTitle(), request.getEpisodeOrder());
-        log.info("  📍 Image Type: {}", request.getImageType());
-        log.info("  🔗 Image S3 URL: {}", request.getImageS3Url() != null ?
+        log.info("Story ID: {}", request.getStoryId());
+        log.info("Node ID: {}", request.getNodeId());
+        log.info("Episode: {} (order: {})", request.getEpisodeTitle(), request.getEpisodeOrder());
+        log.info("Image Type: {}", request.getImageType());
+        log.info("Image S3 URL: {}", request.getImageS3Url() != null ?
             (request.getImageS3Url().length() > 100 ? request.getImageS3Url().substring(0, 100) + "..." : request.getImageS3Url())
             : "NULL");
         log.debug("Request details: nodeText={}, situation={}, episodeTitle={}",
@@ -97,11 +102,11 @@ public class ImageGenerationAiClient {
         // S3 presigned URL 전달 (백엔드에서 생성한 업로드용 URL)
         if (request.getImageS3Url() != null && !request.getImageS3Url().isEmpty()) {
             aiImageRequest.put("s3_url", request.getImageS3Url());
-            log.info("  ✅ S3 presigned URL included for AI-IMAGE server");
-            log.debug("     URL: {}", request.getImageS3Url().substring(0, Math.min(150, request.getImageS3Url().length())));
+            log.info("S3 presigned URL included for AI-IMAGE server");
+            log.debug("URL: {}", request.getImageS3Url().substring(0, Math.min(150, request.getImageS3Url().length())));
         } else {
-            log.error("  ❌ No S3 presigned URL provided - AI-IMAGE server will fail!");
-            log.error("     imageS3Url is: {}", request.getImageS3Url() == null ? "NULL" : "EMPTY STRING");
+            log.error("No S3 presigned URL provided - AI-IMAGE server will fail!");
+            log.error("imageS3Url is: {}", request.getImageS3Url() == null ? "NULL" : "EMPTY STRING");
         }
 
         return imageGenerationAiWebClient.post()

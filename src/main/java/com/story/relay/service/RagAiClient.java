@@ -157,8 +157,25 @@ public class RagAiClient {
      * Returns a reactive Mono for non-blocking execution
      */
     public Mono<Boolean> checkHealth() {
-        // NPC AI server doesn't have a health endpoint, try a simple check
-        return Mono.just(true)
+        log.debug("Checking RAG server health");
+
+        return ragServerWebClient.get()
+                .uri("/")
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofSeconds(5))
+                .map(response -> {
+                    // Check if response has a valid status field
+                    Object status = response.get("status");
+                    return status != null && "running".equals(status.toString());
+                })
+                .doOnSuccess(healthy -> {
+                    if (healthy) {
+                        log.debug("RAG server is healthy");
+                    } else {
+                        log.warn("RAG server responded but status is not 'running'");
+                    }
+                })
                 .doOnError(e -> log.warn("RAG server health check failed: {}", e.getMessage()))
                 .onErrorReturn(false);
     }

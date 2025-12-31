@@ -2,6 +2,7 @@ package com.story.relay.service;
 
 import com.story.relay.dto.SubtreeRegenerationRequestDto;
 import com.story.relay.dto.SubtreeRegenerationResponseDto;
+import com.story.relay.exception.AiServerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,8 +36,8 @@ public class AnalysisAiClient {
             .timeout(Duration.ofMinutes(3))
             .doOnSuccess(response -> log.info("Novel analysis completed successfully"))
             .doOnError(e -> log.error("AI server error during analysis: {}", e.getMessage(), e))
-            .onErrorMap(e -> new RuntimeException("Analysis failed: " + e.getMessage()))
-            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+            .onErrorMap(e -> new AiServerException("ANALYSIS-AI", "Analysis failed: " + e.getMessage(), e))
+            .switchIfEmpty(Mono.error(new AiServerException("ANALYSIS-AI", "No response from analysis AI server")));
     }
 
     /**
@@ -56,8 +57,8 @@ public class AnalysisAiClient {
             .timeout(Duration.ofMinutes(3))
             .doOnSuccess(response -> log.info("S3 novel analysis completed successfully"))
             .doOnError(e -> log.error("AI server error during S3 analysis: {}", e.getMessage(), e))
-            .onErrorMap(e -> new RuntimeException("S3 analysis failed: " + e.getMessage()))
-            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+            .onErrorMap(e -> new AiServerException("ANALYSIS-AI", "S3 analysis failed: " + e.getMessage(), e))
+            .switchIfEmpty(Mono.error(new AiServerException("ANALYSIS-AI", "No response from analysis AI server")));
     }
 
     /**
@@ -77,8 +78,8 @@ public class AnalysisAiClient {
             .timeout(Duration.ofMinutes(10))
             .doOnSuccess(response -> log.info("Story generation completed successfully"))
             .doOnError(e -> log.error("AI server error during generation: {}", e.getMessage(), e))
-            .onErrorMap(e -> new RuntimeException("Story generation failed: " + e.getMessage()))
-            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+            .onErrorMap(e -> new AiServerException("ANALYSIS-AI", "Story generation failed: " + e.getMessage(), e))
+            .switchIfEmpty(Mono.error(new AiServerException("ANALYSIS-AI", "No response from analysis AI server")));
     }
 
     /**
@@ -98,8 +99,8 @@ public class AnalysisAiClient {
             .timeout(Duration.ofMinutes(10))
             .doOnSuccess(response -> log.info("Next episode generation completed successfully"))
             .doOnError(e -> log.error("AI server error during next episode generation: {}", e.getMessage(), e))
-            .onErrorMap(e -> new RuntimeException("Next episode generation failed: " + e.getMessage()))
-            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+            .onErrorMap(e -> new AiServerException("ANALYSIS-AI", "Next episode generation failed: " + e.getMessage(), e))
+            .switchIfEmpty(Mono.error(new AiServerException("ANALYSIS-AI", "No response from analysis AI server")));
     }
 
     /**
@@ -119,8 +120,8 @@ public class AnalysisAiClient {
             .timeout(Duration.ofMinutes(3))
             .doOnSuccess(response -> log.info("Final endings generation completed successfully"))
             .doOnError(e -> log.error("AI server error during finalize analysis: {}", e.getMessage(), e))
-            .onErrorMap(e -> new RuntimeException("Finalize analysis failed: " + e.getMessage()))
-            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+            .onErrorMap(e -> new AiServerException("ANALYSIS-AI", "Finalize analysis failed: " + e.getMessage(), e))
+            .switchIfEmpty(Mono.error(new AiServerException("ANALYSIS-AI", "No response from analysis AI server")));
     }
 
     /**
@@ -141,8 +142,8 @@ public class AnalysisAiClient {
             .doOnSuccess(response -> log.info("Subtree regeneration completed: {} nodes regenerated",
                 response.getTotalNodesRegenerated()))
             .doOnError(e -> log.error("AI server error during subtree regeneration: {}", e.getMessage(), e))
-            .onErrorMap(e -> new RuntimeException("Subtree regeneration failed: " + e.getMessage()))
-            .switchIfEmpty(Mono.error(new RuntimeException("No response from analysis AI server")));
+            .onErrorMap(e -> new AiServerException("ANALYSIS-AI", "Subtree regeneration failed: " + e.getMessage(), e))
+            .switchIfEmpty(Mono.error(new AiServerException("ANALYSIS-AI", "No response from analysis AI server")));
     }
 
     /**

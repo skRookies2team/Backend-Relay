@@ -100,6 +100,28 @@ public class GlobalExceptionHandler {
     /**
      * Handle AI server errors
      */
+    @ExceptionHandler(AiServerException.class)
+    public ResponseEntity<ErrorResponse> handleAiServerException(
+            AiServerException ex,
+            ServerWebExchange exchange) {
+
+        String path = exchange != null ? exchange.getRequest().getPath().value() : "unknown";
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_GATEWAY.value())
+                .error("AI Server Error")
+                .message(ex.getMessage())
+                .path(path)
+                .build();
+
+        log.error("AI server error ({}): {}", ex.getServerType(), ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(errorResponse);
+    }
+
+    /**
+     * Handle other runtime errors
+     */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(
             RuntimeException ex,
