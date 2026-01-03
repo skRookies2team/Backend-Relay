@@ -119,13 +119,24 @@ public class RagAiClient {
      */
     public Mono<ChatMessageResponseDto> sendMessage(ChatMessageRequestDto request) {
         log.info("Sending message to character: {} ({})", request.getCharacterName(), request.getCharacterId());
+        log.info("Story ID: {}", request.getStoryId());
         log.info("User message: {}", request.getUserMessage());
 
         // Build request for /api/ai/chat
+        // session_id는 storyId로 설정 (벡터 스토어 매칭용)
+        // character_name은 캐릭터 페르소나 설정용
         Map<String, String> chatRequest = new HashMap<>();
-        chatRequest.put("session_id", request.getCharacterId());
+
+        // storyId를 session_id로 사용 (Python AI 서버의 벡터 스토어 검색 키)
+        String sessionId = (request.getStoryId() != null && !request.getStoryId().isEmpty())
+                ? request.getStoryId()
+                : request.getCharacterId();  // fallback: storyId가 없으면 characterId 사용
+
+        chatRequest.put("session_id", sessionId);
         chatRequest.put("character_name", request.getCharacterName() != null ? request.getCharacterName() : "캐릭터");
         chatRequest.put("message", request.getUserMessage());
+
+        log.info("Sending to Python AI server - session_id: {}, character_name: {}", sessionId, chatRequest.get("character_name"));
 
         return ragServerWebClient.post()
                 .uri("/api/ai/chat")
