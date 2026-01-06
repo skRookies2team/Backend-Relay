@@ -89,7 +89,8 @@ public class RagAiClient {
         trainRequest.put("session_id", request.getStoryId());
         trainRequest.put("file_key", request.getFileKey());
         trainRequest.put("bucket", request.getBucket());
-        trainRequest.put("character_name", request.getTitle());  // 스토리 제목을 캐릭터명으로 사용
+        // character_name은 보내지 않음 - 나중에 setCharacter에서 실제 캐릭터들을 설정
+        trainRequest.put("character_name", "");  // 빈 문자열로 전송하여 기본값 사용
 
         return ragServerWebClient.post()
                 .uri("/api/ai/train-from-s3")
@@ -132,8 +133,26 @@ public class RagAiClient {
                 ? request.getStoryId()
                 : request.getCharacterId();  // fallback: storyId가 없으면 characterId 사용
 
+        // characterName 처리: null이면 characterId에서 추출 시도
+        String characterName = request.getCharacterName();
+        if (characterName == null || characterName.isEmpty()) {
+            // characterId에서 캐릭터 이름 추출 (story_39a5d3b1_로미오 → 로미오)
+            String characterId = request.getCharacterId();
+            if (characterId != null && characterId.startsWith("story_") && characterId.contains("_")) {
+                String[] parts = characterId.split("_");
+                if (parts.length >= 3) {
+                    characterName = String.join("_", java.util.Arrays.copyOfRange(parts, 2, parts.length));
+                    log.info("CharacterId에서 캐릭터 이름 추출: {} → {}", characterId, characterName);
+                } else {
+                    characterName = "캐릭터"; // 기본값
+                }
+            } else {
+                characterName = "캐릭터"; // 기본값
+            }
+        }
+
         chatRequest.put("session_id", sessionId);
-        chatRequest.put("character_name", request.getCharacterName() != null ? request.getCharacterName() : "캐릭터");
+        chatRequest.put("character_name", characterName);
         chatRequest.put("message", request.getUserMessage());
 
         log.info("Sending to Python AI server - session_id: {}, character_name: {}", sessionId, chatRequest.get("character_name"));
